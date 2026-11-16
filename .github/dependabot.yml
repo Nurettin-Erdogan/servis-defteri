@@ -13,6 +13,16 @@ updates:
         update-types:
           - minor
           - patch
+      api-minor-ve-yama:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+      api-guvenlik:
+        applies-to: security-updates
+        patterns:
+          - "*"
     ignore:
       - dependency-name: prisma
         update-types:
@@ -26,17 +36,38 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      web-minor-ve-yama:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+      web-guvenlik:
+        applies-to: security-updates
+        patterns:
+          - "*"
 
   - package-ecosystem: npm
     directory: /apps/mobile
     schedule:
       interval: weekly
     # Expo SDK dependencies must be upgraded together with `npx expo install`.
-    # Security updates still use Dependabot's separate pull request limit.
+    # Security updates still use Dependabot's separate pull request limit
+    # and are grouped into a single pull request.
     open-pull-requests-limit: 0
+    groups:
+      mobile-guvenlik:
+        applies-to: security-updates
+        patterns:
+          - "*"
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
     open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"
