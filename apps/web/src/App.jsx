@@ -31,7 +31,7 @@ import {
   getJobs,
   getMe,
   getStoredUser,
-  getToken,
+  hasSession,
   logout,
   setStoredUser,
   updateCustomer,
@@ -226,8 +226,8 @@ function App() {
   const [jobBoardFilter, setJobBoardFilter] = useState("today");
   const [activeView, setActiveView] = useState(getInitialActiveView);
   const [loading, setLoading] = useState(false);
-  const [authUser, setAuthUser] = useState(() => (getToken() ? getStoredUser() : null));
-  const [authLoading, setAuthLoading] = useState(() => Boolean(getToken() && !getStoredUser()));
+  const [authUser, setAuthUser] = useState(() => (hasSession() ? getStoredUser() : null));
+  const [authLoading, setAuthLoading] = useState(() => Boolean(hasSession() && !getStoredUser()));
   const [message, setMessage] = useState("");
   const [minAppointmentAt, setMinAppointmentAt] = useState(getMinAppointmentValue);
   const totalRevenue = useMemo(() => {
@@ -398,7 +398,7 @@ function App() {
   }, []);
   useEffect(() => {
     async function loadSession() {
-      if (!getToken()) {
+      if (!hasSession()) {
         setAuthLoading(false);
         return;
       }

@@ -67,6 +67,23 @@ npm run lint
 npm run build
 ```
 
+### 3.1 httpOnly cookie oturumuna geçiş (hazır, canlıda henüz kapalı)
+
+API ve web istemcisi cookie oturumunu destekler: token yalnızca `HttpOnly; SameSite=Strict` (üretimde `__Host-` önekli ve `Secure`) cookie'de durur, JavaScript'e hiç görünmez; cookie ile doğrulanan değiştirici istekler yalnızca izinli `Origin`'den kabul edilir (CSRF); mobil uygulama Bearer token ile değişmeden çalışır. Canlı web şu an `bearer` modundadır çünkü geçiş altyapı ayarı gerektirir:
+
+1. **Aynı site şartı.** Web (`*.vercel.app`) ve API (`*.onrender.com`) farklı sitelerdir; API'nin koyduğu cookie tarayıcı için üçüncü taraf cookie olur ve **Safari bunu engeller** (giriş bozulur). Bu yüzden web, API'ye kendi alan adı üzerinden ulaşmalıdır. `apps/web/vercel.json` içine proxy eklenir:
+
+   ```json
+   "rewrites": [
+     { "source": "/api/:path*", "destination": "https://islik-cloud-api.onrender.com/api/:path*" },
+     { "source": "/health", "destination": "https://islik-cloud-api.onrender.com/health" }
+   ]
+   ```
+
+2. **Vercel ortam değişkenleri:** `VITE_AUTH_MODE="cookie"` ve `VITE_API_URL=""` (boş: istekler aynı kaynağa, proxy'ye gider). CSP'deki `connect-src` içinden Render adresi kaldırılabilir.
+3. **Rate limit uyarısı (geçişten önce çözülmeli).** Proxy sonrası bütün web kullanıcıları Render'a Vercel'in çıkış IP'lerinden gelir. API'deki `trust proxy 1` ayarıyla `req.ip` istemcinin değil Vercel'in adresi olur ve `/api/auth` sınırı herkes için ortak bir kovaya döner. Geçişten önce giriş denemeleri e-posta bazında da sınırlanmalı ve Vercel'in eklediği istemci IP'sine yalnızca doğrulanmış proxy isteklerinde güvenilmelidir.
+4. Kabul testi: Safari ve Chrome'da giriş, sayfa yenileme, çıkış; `document.cookie` içinde token görünmemeli.
+
 ## 4. Mobil Ortam ve Paket
 
 EAS `preview` ve `production` profillerinde:

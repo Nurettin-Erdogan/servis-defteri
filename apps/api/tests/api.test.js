@@ -824,3 +824,111 @@ test("security headers reject framing and leaking referrers", async () => {
   assert.equal(response.headers["referrer-policy"], "no-referrer");
   assert.equal(response.headers["permissions-policy"], "camera=(), microphone=(), geolocation=()");
 });
+
+const TRUSTED_ORIGIN = "http://localhost:5173";
+const customerPayload = {
+  name: "Ahmet Yılmaz",
+  phone: "05551234567",
+  address: "İstanbul",
+  note: "Cookie oturumu"
+};
+
+async function loginWithCookie(email = "cookie@example.com") {
+  await request(app)
+    .post("/api/auth/register")
+    .send({ name: "Cookie User", email, password: "secret123" })
+    .expect(201);
+
+  const response = await request(app)
+    .post("/api/auth/login")
+    .set("X-Auth-Mode", "cookie")
+    .send({ email, password: "secret123" })
+    .expect(200);
+
+  const setCookie = response.headers["set-cookie"]?.[0] || "";
+  return { response, setCookie, cookie: setCookie.split(";")[0] };
+}
+
+test("cookie login stores the token only in an httpOnly strict cookie", async () => {
+  const { response, setCookie, cookie } = await loginWithCookie();
+
+  assert.equal(response.body.data.token, undefined);
+  assert.equal(response.body.data.user.email, "cookie@example.com");
+  assert.match(cookie, /^islik_session=.+/);
+  assert.match(setCookie, /HttpOnly/i);
+  assert.match(setCookie, /SameSite=Strict/i);
+  assert.match(setCookie, /Path=\//i);
+  assert.match(setCookie, /Max-Age=604800/i);
+
+  const me = await request(app).get("/api/auth/me").set("Cookie", cookie).expect(200);
+  assert.equal(me.body.data.user.email, "cookie@example.com");
+});
+
+test("cookie-authenticated writes require a trusted Origin (CSRF)", async () => {
+  const { cookie } = await loginWithCookie();
+
+  await request(app)
+    .post("/api/customers")
+    .set("Cookie", cookie)
+    .set("Origin", TRUSTED_ORIGIN)
+    .send(customerPayload)
+    .expect(201);
+
+  const crossSite = await request(app)
+    .post("/api/customers")
+    .set("Cookie", cookie)
+    .set("Origin", "https://evil.example")
+    .send(customerPayload);
+  const noOrigin = await request(app)
+    .post("/api/customers")
+    .set("Cookie", cookie)
+    .send(customerPayload);
+
+  assert.equal(crossSite.status, 403);
+  assert.equal(noOrigin.status, 403);
+  assert.equal(noOrigin.body.error.message, "Cross-site request blocked.");
+
+  const customers = await request(app).get("/api/customers").set("Cookie", cookie).expect(200);
+  assert.equal(customers.body.data.length, 1);
+});
+
+test("bearer clients such as the mobile app keep working without Origin", async () => {
+  const token = await createAuthToken();
+
+  const response = await request(app)
+    .post("/api/customers")
+    .set("Authorization", `Bearer ${token}`)
+    .send(customerPayload)
+    .expect(201);
+
+  assert.equal(response.body.data.name, "Ahmet Yılmaz");
+});
+
+test("logout clears the session cookie and invalid cookies are cleared", async () => {
+  const logout = await request(app).post("/api/auth/logout").expect(204);
+  const cleared = logout.headers["set-cookie"]?.[0] || "";
+  assert.match(cleared, /^islik_session=;/);
+  assert.match(cleared, /Expires=Thu, 01 Jan 1970/i);
+
+  const invalid = await request(app)
+    .get("/api/auth/me")
+    .set("Cookie", "islik_session=not-a-jwt")
+    .expect(401);
+  assert.match(invalid.headers["set-cookie"]?.[0] || "", /^islik_session=;/);
+});
+
+test("CORS exposes credentials only to trusted origins", async () => {
+  const trusted = await request(app)
+    .options("/api/auth/me")
+    .set("Origin", TRUSTED_ORIGIN)
+    .set("Access-Control-Request-Method", "GET")
+    .expect(204);
+  const other = await request(app)
+    .options("/api/auth/me")
+    .set("Origin", "https://evil.example")
+    .set("Access-Control-Request-Method", "GET");
+
+  assert.equal(trusted.headers["access-control-allow-credentials"], "true");
+  assert.equal(trusted.headers["access-control-allow-origin"], TRUSTED_ORIGIN);
+  assert.equal(other.headers["access-control-allow-credentials"], undefined);
+});

@@ -1,7 +1,13 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const { prisma } = require("../lib/prisma");
-const { requireAuth, signToken } = require("../middleware/auth");
+const {
+  clearSessionCookie,
+  requireAuth,
+  setSessionCookie,
+  signToken,
+  wantsCookieSession
+} = require("../middleware/auth");
 
 const router = express.Router();
 const MAX_EMAIL_LENGTH = 254;
@@ -52,6 +58,30 @@ function publicUser(user) {
     email: user.email,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt
+  };
+}
+
+// Web istemcisi cookie oturumu isterse token yalnızca httpOnly cookie'ye
+// yazılır ve yanıt gövdesinde yer almaz: sayfadaki JavaScript (ve olası bir
+// XSS) token'ı hiçbir an göremez. Mobil uygulama token'ı gövdeden alıp
+// cihazın güvenli deposunda (SecureStore) saklamaya devam eder.
+function sessionResponse(req, res, user) {
+  const token = signToken(user);
+
+  if (wantsCookieSession(req)) {
+    setSessionCookie(res, token);
+    return {
+      data: {
+        user: publicUser(user)
+      }
+    };
+  }
+
+  return {
+    data: {
+      user: publicUser(user),
+      token
+    }
   };
 }
 
@@ -121,12 +151,7 @@ router.post("/register", async (req, res, next) => {
       }
     });
 
-    res.status(201).json({
-      data: {
-        user: publicUser(user),
-        token: signToken(user)
-      }
-    });
+    res.status(201).json(sessionResponse(req, res, user));
   } catch (error) {
     next(error);
   }
@@ -176,15 +201,15 @@ router.post("/login", async (req, res, next) => {
       });
     }
 
-    res.json({
-      data: {
-        user: publicUser(user),
-        token: signToken(user)
-      }
-    });
+    res.json(sessionResponse(req, res, user));
   } catch (error) {
     next(error);
   }
+});
+
+router.post("/logout", (req, res) => {
+  clearSessionCookie(res);
+  res.status(204).end();
 });
 
 router.get("/me", requireAuth, async (req, res, next) => {
