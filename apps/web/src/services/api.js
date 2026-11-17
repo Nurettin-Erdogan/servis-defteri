@@ -1,15 +1,32 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 const TOKEN_KEY = "islik_cloud_token";
 const USER_KEY = "islik_cloud_user";
 const WARMUP_TIMEOUT_MS = 45_000;
 const REQUEST_TIMEOUT_MS = 75_000;
 
+// "cookie": oturum token'ı API'nin koyduğu httpOnly cookie'de durur; sayfadaki
+// JavaScript onu hiç görmez, bu yüzden bir XSS açığı token'ı çalamaz.
+// Web ile API aynı sitede olmalıdır (ör. Vercel rewrite ile /api proxy'si);
+// aksi hâlde Safari üçüncü taraf cookie'yi engeller. Bkz. docs/deploy-checklist.md.
+// "bearer": eski davranış; token localStorage'da tutulur.
+export const AUTH_MODE = import.meta.env.VITE_AUTH_MODE === "cookie" ? "cookie" : "bearer";
+const usesCookieSession = AUTH_MODE === "cookie";
+
 export function getToken() {
-  return localStorage.getItem(TOKEN_KEY);
+  return usesCookieSession ? null : localStorage.getItem(TOKEN_KEY);
 }
 
 export function setToken(token) {
-  localStorage.setItem(TOKEN_KEY, token);
+  if (!usesCookieSession && token) {
+    localStorage.setItem(TOKEN_KEY, token);
+  }
+}
+
+// Kayıtlı bir oturum olabilir mi? Cookie modunda token okunamadığı için
+// yalnızca önbellekteki kullanıcı bilgisine bakılır; gerçek doğrulamayı her
+// açılışta /api/auth/me yapar.
+export function hasSession() {
+  return usesCookieSession ? Boolean(getStoredUser()) : Boolean(getToken());
 }
 
 export function getStoredUser() {
@@ -39,6 +56,16 @@ export function setStoredUser(user) {
 export function logout() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+
+  if (usesCookieSession) {
+    // httpOnly cookie'yi yalnızca sunucu silebilir.
+    return fetch(API_URL + "/api/auth/logout", {
+      method: "POST",
+      credentials: "include"
+    }).catch(() => undefined);
+  }
+
+  return Promise.resolve();
 }
 
 async function request(path, options = {}) {
@@ -57,6 +84,7 @@ async function request(path, options = {}) {
         ...(token ? { Authorization: "Bearer " + token } : {}),
         ...(headers || {})
       },
+      ...(usesCookieSession ? { credentials: "include" } : {}),
       signal: suppliedSignal || controller.signal,
       ...fetchOptions
     });
@@ -115,9 +143,12 @@ export async function warmUpApi() {
   return false;
 }
 
+const sessionHeaders = usesCookieSession ? { "X-Auth-Mode": "cookie" } : {};
+
 export async function register(payload) {
   const response = await request("/api/auth/register", {
     method: "POST",
+    headers: sessionHeaders,
     body: JSON.stringify(payload)
   });
 
@@ -129,6 +160,7 @@ export async function register(payload) {
 export async function login(payload) {
   const response = await request("/api/auth/login", {
     method: "POST",
+    headers: sessionHeaders,
     body: JSON.stringify(payload)
   });
 

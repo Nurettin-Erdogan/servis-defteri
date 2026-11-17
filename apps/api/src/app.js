@@ -6,15 +6,12 @@ const jobsRouter = require("./routes/jobs");
 const publicRequestsRouter = require("./routes/publicRequests");
 const { prisma } = require("./lib/prisma");
 const { assertJwtSecret, requireAuth } = require("./middleware/auth");
+const { isCredentialedOrigin, isOriginAllowed } = require("./lib/origins");
 assertJwtSecret();
 const app = express();
 const isProduction = process.env.NODE_ENV === "production";
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
-const allowedOrigins = (process.env.CORS_ORIGIN || "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
 const authRateLimitWindowMs = normalizePositiveInteger(
   process.env.AUTH_RATE_LIMIT_WINDOW_MS,
   15 * 60 * 1000
@@ -42,15 +39,6 @@ function normalizePositiveInteger(value, fallback) {
     return fallback;
   }
   return numberValue;
-}
-function isOriginAllowed(origin) {
-  if (!origin) {
-    return true;
-  }
-  if (allowedOrigins.includes(origin)) {
-    return true;
-  }
-  return !isProduction && allowedOrigins.length === 0;
 }
 function createRateLimiter({ windowMs, max, message }) {
   const buckets = new Map();
@@ -110,14 +98,14 @@ function requestLogger(req, res, next) {
 app.use(securityHeaders);
 app.use(requestLogger);
 app.use(
-  cors({
-    origin(origin, callback) {
-      if (isOriginAllowed(origin)) {
-        callback(null, true);
-        return;
-      }
+  cors((req, callback) => {
+    const origin = req.get("Origin");
+    if (!isOriginAllowed(origin)) {
       callback(new Error("Not allowed by CORS"));
+      return;
     }
+    // Kimlik bilgisi (cookie) yalnızca açıkça güvenilen kaynaklara açılır.
+    callback(null, { origin: true, credentials: isCredentialedOrigin(origin) });
   })
 );
 app.use(

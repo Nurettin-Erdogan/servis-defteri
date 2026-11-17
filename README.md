@@ -114,7 +114,19 @@ docs/         demo ve teknik belgeler
 - Kullanıcı bazlı tenant izolasyonu
 - Mobilde Keychain / Keystore tabanlı `expo-secure-store`
 
-Web istemcisinde JWT şu anda `localStorage` içinde tutulur. Bu, vitrin/demo için kabul edilmiş bir trade-off'tur; `httpOnly` cookie'ye geçiş roadmap'tedir.
+### Web oturumu: httpOnly cookie modu
+
+API iki oturum biçimini birlikte destekler:
+
+| İstemci | Token nerede? | Koruma |
+| --- | --- | --- |
+| Mobil (Expo) | Gövdede döner, cihazda `SecureStore` | Tarayıcı otomatik göndermediği için CSRF'e açık değildir |
+| Web, `cookie` modu | Yalnızca `HttpOnly; SameSite=Strict` cookie'de; üretimde `__Host-` önekli ve `Secure` | JavaScript token'ı göremez (XSS token çalamaz); cookie ile doğrulanan değiştirici istekler yalnızca izinli `Origin`'den kabul edilir (CSRF); cookie yalnızca `X-Auth-Mode: cookie` başlığıyla verilir (login CSRF) |
+| Web, `bearer` modu | `localStorage` | Eski davranış |
+
+Cookie modu gerçek tarayıcıda uçtan uca doğrulandı: kayıttan sonra `document.cookie` ve `localStorage` token içermiyor, sayfa yenilenince oturum sürüyor, çıkışta cookie siliniyor ve `/api/auth/me` 401 dönüyor.
+
+**Canlı web şu an `bearer` modundadır.** Web (`vercel.app`) ve API (`onrender.com`) farklı sitelerdir; API'nin koyacağı cookie Safari'de üçüncü taraf cookie olarak engellenir. Geçiş, web'in API'ye kendi alan adı üzerinden proxy ile ulaşmasını ve rate limit anahtarının buna göre ayarlanmasını gerektirir. Adımlar ve riskler: [docs/deploy-checklist.md](docs/deploy-checklist.md#31-httponly-cookie-oturumuna-geçiş-hazır-canlıda-henüz-kapalı).
 
 Ortam değişkenleri için örnek yapılandırma `apps/api/.env.example` dosyasındadır. Production secret'ları repoya eklenmemelidir.
 
