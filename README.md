@@ -4,6 +4,7 @@
   <a href="https://github.com/Nurettin-Erdogan/servis-defteri/actions/workflows/api-ci.yml"><img src="https://github.com/Nurettin-Erdogan/servis-defteri/actions/workflows/api-ci.yml/badge.svg?branch=main" alt="API CI"></a>
   <a href="https://github.com/Nurettin-Erdogan/servis-defteri/actions/workflows/web-ci.yml"><img src="https://github.com/Nurettin-Erdogan/servis-defteri/actions/workflows/web-ci.yml/badge.svg?branch=main" alt="Web CI"></a>
   <a href="https://github.com/Nurettin-Erdogan/servis-defteri/actions/workflows/mobile-ci.yml"><img src="https://github.com/Nurettin-Erdogan/servis-defteri/actions/workflows/mobile-ci.yml/badge.svg?branch=main" alt="Mobil CI"></a>
+  <a href="https://github.com/Nurettin-Erdogan/servis-defteri/actions/workflows/production-smoke.yml"><img src="https://github.com/Nurettin-Erdogan/servis-defteri/actions/workflows/production-smoke.yml/badge.svg?branch=main" alt="Canlı sistem kontrolü"></a>
   <a href="https://islik-cloud.vercel.app/"><img src="https://img.shields.io/badge/live-Vercel-0f766e.svg" alt="Canlı web"></a>
   <img src="https://img.shields.io/badge/mobile-Expo%201.2.1-0f766e.svg" alt="Expo 1.2.1">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-0f766e.svg" alt="MIT License"></a>
