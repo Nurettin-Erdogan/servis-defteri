@@ -1,6 +1,6 @@
 # Canlı tur
 
-[Servis Defteri](https://islik-cloud.vercel.app/) müşteri talebi, randevu, iş durumu ve ödemeyi aynı kayıtta tutar. Kaynak deposu özeldir; web herkese açıktır.
+[Servis Defteri](https://islik-cloud.vercel.app/) müşteri talebi, randevu, iş durumu ve ödemeyi aynı kayıtta tutar. Kaynak kodu ve canlı web uygulaması herkese açıktır.
 
 Render ücretsiz planda uykuya geçebilir. İlk istek 20–60 saniye sürebilir.
 

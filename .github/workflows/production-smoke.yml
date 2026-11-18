@@ -2,6 +2,11 @@ name: Production Smoke Test
 
 on:
   workflow_dispatch:
+  # Canlı API'yi her sabah 06:00'da (TSİ, UTC+3) kendiliğinden doğrula.
+  # Zamanlanmış çalışma başarısız olursa GitHub e-posta bildirimi gönderir;
+  # Render'daki veritabanı kesintisi bu kontrol olmadığı için iki ay fark edilmedi.
+  schedule:
+    - cron: "0 3 * * *"
 
 permissions:
   contents: read
@@ -24,7 +29,10 @@ jobs:
         env:
           SMOKE_BASE_URL: https://islik-cloud-api.onrender.com
           SMOKE_TIMEOUT_MS: "90000"
-          SMOKE_EXPECTED_GIT_COMMIT: ${{ github.sha }}
+          # Render yalnızca apps/api değiştiğinde yeniden dağıtır; main'in son
+          # commit'i sadece web'i değiştirmiş olabilir. Bu yüzden sürüm eşleşmesi
+          # yalnızca elle tetiklenen (dağıtım sonrası) çalışmada beklenir.
+          SMOKE_EXPECTED_GIT_COMMIT: ${{ github.event_name == 'workflow_dispatch' && github.sha || '' }}
         working-directory: apps/api
         run: npm run smoke:production
 
