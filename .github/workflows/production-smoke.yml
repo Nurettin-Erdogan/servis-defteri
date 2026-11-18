@@ -19,20 +19,30 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # apps/api'ye dokunan son commit'i bulabilmek için tam geçmiş.
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
           node-version: 22
 
+      # Render yalnızca apps/api değiştiğinde yeniden dağıtır. Bu yüzden canlıda
+      # main'in son commit'i değil, apps/api'ye dokunan son commit çalışmalıdır.
+      # Bu kontrol, dağıtımın eski bir sürümde takılı kalmasını da yakalar.
+      - name: Find expected API revision
+        id: revision
+        run: |
+          sha="$(git log -1 --format=%H -- apps/api)"
+          echo "Beklenen API sürümü: $sha"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
       - name: Verify production API
         env:
           SMOKE_BASE_URL: https://islik-cloud-api.onrender.com
           SMOKE_TIMEOUT_MS: "90000"
-          # Render yalnızca apps/api değiştiğinde yeniden dağıtır; main'in son
-          # commit'i sadece web'i değiştirmiş olabilir. Bu yüzden sürüm eşleşmesi
-          # yalnızca elle tetiklenen (dağıtım sonrası) çalışmada beklenir.
-          SMOKE_EXPECTED_GIT_COMMIT: ${{ github.event_name == 'workflow_dispatch' && github.sha || '' }}
+          SMOKE_EXPECTED_GIT_COMMIT: ${{ steps.revision.outputs.sha }}
         working-directory: apps/api
         run: npm run smoke:production
 
