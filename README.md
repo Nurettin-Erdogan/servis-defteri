@@ -4,6 +4,7 @@
   <a href="https://github.com/Nurettin-Erdogan/servis-defteri/actions/workflows/api-ci.yml"><img src="https://github.com/Nurettin-Erdogan/servis-defteri/actions/workflows/api-ci.yml/badge.svg?branch=main" alt="API CI"></a>
   <a href="https://github.com/Nurettin-Erdogan/servis-defteri/actions/workflows/web-ci.yml"><img src="https://github.com/Nurettin-Erdogan/servis-defteri/actions/workflows/web-ci.yml/badge.svg?branch=main" alt="Web CI"></a>
   <a href="https://github.com/Nurettin-Erdogan/servis-defteri/actions/workflows/mobile-ci.yml"><img src="https://github.com/Nurettin-Erdogan/servis-defteri/actions/workflows/mobile-ci.yml/badge.svg?branch=main" alt="Mobil CI"></a>
+  <a href="https://github.com/Nurettin-Erdogan/servis-defteri/actions/workflows/codeql.yml"><img src="https://github.com/Nurettin-Erdogan/servis-defteri/actions/workflows/codeql.yml/badge.svg?branch=main" alt="CodeQL"></a>
   <a href="https://github.com/Nurettin-Erdogan/servis-defteri/actions/workflows/production-smoke.yml"><img src="https://github.com/Nurettin-Erdogan/servis-defteri/actions/workflows/production-smoke.yml/badge.svg?branch=main" alt="Canlı sistem kontrolü"></a>
   <a href="https://islik-cloud.vercel.app/"><img src="https://img.shields.io/badge/live-Vercel-0f766e.svg" alt="Canlı web"></a>
   <img src="https://img.shields.io/badge/mobile-Expo%201.2.1-0f766e.svg" alt="Expo 1.2.1">
@@ -130,6 +131,16 @@ Cookie modu gerçek tarayıcıda uçtan uca doğrulandı: kayıttan sonra `docum
 **Canlı web şu an `bearer` modundadır.** Web (`vercel.app`) ve API (`onrender.com`) farklı sitelerdir; API'nin koyacağı cookie Safari'de üçüncü taraf cookie olarak engellenir. Geçiş, web'in API'ye kendi alan adı üzerinden proxy ile ulaşmasını ve rate limit anahtarının buna göre ayarlanmasını gerektirir. Adımlar ve riskler: [docs/deploy-checklist.md](docs/deploy-checklist.md#31-httponly-cookie-oturumuna-geçiş-hazır-canlıda-henüz-kapalı).
 
 Ortam değişkenleri için örnek yapılandırma `apps/api/.env.example` dosyasındadır. Production secret'ları repoya eklenmemelidir.
+
+## Bilinen sınırlar
+
+- **Tek kullanıcılı hesap modeli:** Her usta hesabı yalnızca kendi müşteri ve iş kayıtlarını görür. İşletme/çalışma alanı, birden fazla çalışan ve rol-yetki modeli henüz yoktur.
+- **Müşteri talepleri tek hizmet sahibine düşer:** Üye olmadan açılan talepler `PUBLIC_SERVICE_OWNER_EMAIL` hesabına atanır (tanımlı değilse demo hesabına, o da yoksa ilk kayıtlı kullanıcıya). Ürün, birden çok işletmeyi barındıran bir pazar yeri değildir.
+- **Fotoğraflar veritabanında tutulur:** Arıza fotoğrafları iş kaydının JSON alanında base64 olarak saklanır (iş başına en fazla 3, her biri yaklaşık 950 KB sınırlı). Büyük ölçekte nesne depolamaya (S3 vb.) taşınmalıdır.
+- **Rate limit süreç içi bellektedir:** Sunucu yeniden başlayınca sayaçlar sıfırlanır ve birden fazla API örneği arasında paylaşılmaz.
+- **Bildirim gönderilmez:** Müşteri durum değişikliğini takip kodu ve telefonla kendisi kontrol eder. E-posta veya SMS yoktur.
+- **Ödeme yalnızca takip edilir:** `ödenmedi / kısmi / ödendi` durumu kaydedilir; kart veya online ödeme alma entegrasyonu yoktur.
+- **Canlı ortam ücretsiz plandadır:** Render API uykuya geçebilir, ilk istek 20–60 saniye sürebilir. Canlı web `bearer` oturum modundadır; cookie modu hazırdır ancak henüz açılmamıştır.
 
 ## Canlı sistem
 
