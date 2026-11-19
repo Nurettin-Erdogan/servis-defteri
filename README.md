@@ -148,6 +148,7 @@ Ortam değişkenleri için örnek yapılandırma `apps/api/.env.example` dosyas�
 - API: https://islik-cloud-api.onrender.com
 - Health: https://islik-cloud-api.onrender.com/health
 - Readiness: https://islik-cloud-api.onrender.com/ready
+- **API dokümantasyonu:** https://islik-cloud-api.onrender.com/docs ([OpenAPI 3.1 belgesi](https://islik-cloud-api.onrender.com/openapi.json))
 
 Render ücretsiz planda uykuya geçebildiği için ilk API isteği normalden uzun sürebilir. İstemciler bu duruma karşı daha uzun zaman aşımı ve yeniden deneme davranışı kullanır.
 
@@ -196,6 +197,17 @@ cd apps/mobile && npm test
 ```
 
 API tarafında Supertest entegrasyon testleri; web ve mobil tarafta istemci testleri CI üzerinde çalıştırılır.
+
+### API sözleşmesi
+
+API'nin OpenAPI 3.1 sözleşmesi [`apps/api/src/openapi.js`](apps/api/src/openapi.js) dosyasındadır; canlıda `/docs` (Redoc) ve `/openapi.json` adreslerinden sunulur. Dokümantasyonun koddan sapmaması bir testle güvenceye alınır ([`tests/openapi.test.js`](apps/api/tests/openapi.test.js)):
+
+- Koddaki her rota belgelenmiştir; belgelenen her işlem koddadır.
+- Uçtan uca bir akışta dönen her gerçek yanıtın durum kodu belgelenmiştir ve gövdesi şemaya birebir uyar. Şemalar `additionalProperties: false` kullanır; kod belgelenmemiş bir alan döndürürse CI kırılır.
+- Belgelenen her başarılı yanıt akışta en az bir kez üretilir.
+- İş durumları, öncelikler ve kategoriler hem doğrulamada hem sözleşmede aynı kaynaktan ([`src/lib/jobFields.js`](apps/api/src/lib/jobFields.js)) okunur.
+
+`/docs` sayfası Redoc'u sürüme sabitlenmiş tek bir dosyadan Subresource Integrity ile yükler; sayfanın Content-Security-Policy'si betiği yalnızca bu URL'ye kilitler. Sayfa salt okunurdur ve API'ye istek atmaz.
 
 ## Canlı demo akışı
 

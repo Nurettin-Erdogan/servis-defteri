@@ -7,6 +7,8 @@ const publicRequestsRouter = require("./routes/publicRequests");
 const { prisma } = require("./lib/prisma");
 const { assertJwtSecret, requireAuth } = require("./middleware/auth");
 const { isCredentialedOrigin, isOriginAllowed } = require("./lib/origins");
+const { openApiDocument } = require("./openapi");
+const { DOCS_CONTENT_SECURITY_POLICY, docsHtml } = require("./docsPage");
 assertJwtSecret();
 const app = express();
 const isProduction = process.env.NODE_ENV === "production";
@@ -148,10 +150,24 @@ app.get("/ready", async (req, res) => {
     });
   }
 });
-app.use("/api/public/requests", publicRequestsRouter);
-app.use("/api/auth", authRouter);
-app.use("/api/customers", requireAuth, customersRouter);
-app.use("/api/jobs", requireAuth, jobsRouter);
+app.get("/openapi.json", (req, res) => {
+  res.json(openApiDocument);
+});
+app.get("/docs", (req, res) => {
+  res.setHeader("Content-Security-Policy", DOCS_CONTENT_SECURITY_POLICY);
+  res.type("html").send(docsHtml);
+});
+// Bağlama tablosu tek kaynaktır: tests/openapi.test.js her rotanın sözleşmede
+// belgelendiğini bu tablo üzerinden doğrular.
+const routeMounts = [
+  { path: "/api/public/requests", router: publicRequestsRouter, middleware: [] },
+  { path: "/api/auth", router: authRouter, middleware: [] },
+  { path: "/api/customers", router: customersRouter, middleware: [requireAuth] },
+  { path: "/api/jobs", router: jobsRouter, middleware: [requireAuth] }
+];
+for (const mount of routeMounts) {
+  app.use(mount.path, ...mount.middleware, mount.router);
+}
 app.use((req, res) => {
   res.status(404).json({
     error: {
@@ -203,6 +219,7 @@ app.use((error, req, res, next) => {
   });
 });
 module.exports = {
-  app
+  app,
+  routeMounts
 };
 

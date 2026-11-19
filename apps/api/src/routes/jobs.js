@@ -1,19 +1,16 @@
 const { randomInt } = require("crypto");
 const express = require("express");
 const { prisma } = require("../lib/prisma");
+const {
+  JOB_PRIORITIES: allowedPriorities,
+  JOB_STATUSES: allowedStatuses,
+  MAX_JOB_PHOTOS,
+  MAX_PHOTO_DATA_URL_LENGTH,
+  PAYMENT_STATUSES: allowedPaymentStatuses,
+  PHOTO_DATA_URL_PATTERN,
+  PRODUCT_CATEGORIES: allowedProductCategories
+} = require("../lib/jobFields");
 const router = express.Router();
-const allowedStatuses = ["pending", "in_progress", "completed", "cancelled"];
-const allowedPriorities = ["low", "normal", "high", "urgent"];
-const allowedPaymentStatuses = ["unpaid", "partial", "paid"];
-const allowedProductCategories = [
-  "heating",
-  "cooling",
-  "white_goods",
-  "electronics",
-  "computer",
-  "phone",
-  "other"
-];
 const jobInclude = {
   customer: true,
   statusEvents: {
@@ -26,9 +23,6 @@ function hasOwn(object, key) {
   return Object.prototype.hasOwnProperty.call(object, key);
 }
 
-const MAX_JOB_PHOTOS = 3;
-const MAX_PHOTO_DATA_URL_LENGTH = 950000;
-const PHOTO_DATA_URL_PATTERN = /^data:image\/(png|jpe?g|webp);base64,/i;
 const MAX_TITLE_LENGTH = 120;
 const MAX_DESCRIPTION_LENGTH = 2000;
 const MAX_PRODUCT_TEXT_LENGTH = 80;
