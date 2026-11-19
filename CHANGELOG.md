@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Eklendi
+
+- OpenAPI 3.1 API sözleşmesi (`apps/api/src/openapi.js`): 18 API işlemi, istek/yanıt şemaları, hata yanıtları, kimlik doğrulama (bearer ve httpOnly cookie) ve rate limit. `/openapi.json` ve Redoc ile `/docs` adreslerinden sunulur.
+- `/docs` sayfası Redoc'u sürüme sabitlenmiş tek dosyadan Subresource Integrity ile yükler; CSP betiği yalnızca bu URL'ye kilitler.
+- Sözleşme testi (`tests/openapi.test.js`): rota kapsamı, şemaların katı modda derlenmesi ve uçtan uca akıştaki her gerçek yanıtın belgelenen durum kodu ve şemayla birebir uyuşması.
+
+### Değiştirildi
+
+- İş durumları, öncelikler, ödeme durumları, kategoriler ve fotoğraf sınırları `src/lib/jobFields.js` modülünde toplandı; rotalar ve sözleşme aynı kaynağı kullanır (kategori listesi önceden iki rotada ayrı tanımlıydı).
+- API test çalıştırıcısı test dosyalarını sırayla çalıştırır (`--test-concurrency=1`); iki dosya aynı test şemasını sıfırlar.
+
 ### Güvenlik
 
 - Dependabot: `browserslist`, `qs`, `@xmldom/xmldom` güvenlik güncellemeleri birleştirildi.

@@ -56,7 +56,10 @@ run(
   process.execPath,
   [
     "--test",
+    // api.test.js ve openapi.test.js aynı test şemasını sıfırladığı için sırayla çalışır.
+    "--test-concurrency=1",
     path.join(__dirname, "api.test.js"),
+    path.join(__dirname, "openapi.test.js"),
     path.join(__dirname, "seed-config.test.js")
   ],
   testEnvironment

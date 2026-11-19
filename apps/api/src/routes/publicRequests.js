@@ -1,18 +1,14 @@
 const { randomInt } = require("crypto");
 const express = require("express");
 const { prisma } = require("../lib/prisma");
+const {
+  MAX_JOB_PHOTOS,
+  MAX_PHOTO_DATA_URL_LENGTH,
+  PHOTO_DATA_URL_PATTERN,
+  PRODUCT_CATEGORIES: allowedProductCategories
+} = require("../lib/jobFields");
 
 const router = express.Router();
-
-const allowedProductCategories = [
-  "heating",
-  "cooling",
-  "white_goods",
-  "electronics",
-  "computer",
-  "phone",
-  "other"
-];
 
 const categoryLabels = {
   heating: "Kombi / Isıtma",
@@ -32,9 +28,6 @@ const jobInclude = {
   }
 };
 
-const MAX_JOB_PHOTOS = 3;
-const MAX_PHOTO_DATA_URL_LENGTH = 950000;
-const PHOTO_DATA_URL_PATTERN = /^data:image\/(png|jpe?g|webp);base64,/i;
 const MAX_CUSTOMER_NAME_LENGTH = 80;
 const MAX_PHONE_LENGTH = 15;
 const MAX_ADDRESS_LENGTH = 250;
